@@ -3,10 +3,8 @@ title: "Introduction à Shiny"
 author: "Antoine Neuraz - antoine.neuraz@gmail.com"
 date: "18/10/2016"
 output:
-  ioslides_presentation:
+  html_document:
     highlight: pygments
-    keep_md: yes
-    widescreen: yes
 runtime: shiny
 ---
 
