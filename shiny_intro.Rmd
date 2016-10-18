@@ -1,0 +1,622 @@
+---
+title: "Introduction à Shiny"
+author: "Antoine Neuraz - antoine.neuraz@gmail.com"
+date: "18/10/2016"
+output:
+  ioslides_presentation:
+    highlight: pygments
+    keep_md: yes
+    widescreen: yes
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+library(shiny)
+library(dplyr)
+library(ggplot2)
+library(plotly)
+library(DT)
+library(shinydashboard)
+
+knitr::opts_chunk$set(echo = FALSE)
+
+catalog_path <- 'data/phewas-catalog.csv'
+codes_path <- 'data/phewas_codes_2016-10-11.csv'
+
+# load data from csv
+catalog <- read.csv(catalog_path, stringsAsFactors = F)
+codes <- read.csv(codes_path, stringsAsFactors = F)
+
+# extract unique phewas codes from codes list
+codes <- codes %>% 
+  select(jd_code, category_string) %>%
+  unique()
+
+# merge codes with their respective category (for plotting)
+catalog <- catalog %>% merge(codes, by.x = 'phewas.code', by.y = 'jd_code')
+
+# extract the list of snps from the catalog
+snps <- catalog %>% 
+  select(snp, gene_name) %>%
+  unique() 
+
+# select top10 genes with significant associations 
+top10 <- catalog %>% 
+  filter(p.value < 0.05/1815) %>% 
+  group_by(snp, gene_name) %>%
+  summarize(count = n()) %>% 
+  arrange(desc(count)) %>%
+  head(10) %>% 
+  select(snp, gene_name)
+
+
+# function to draw a manhattan plot with ggplot2 
+# parameters: catalog = dataframe with the results from the PheWAS catalog
+#             choice = a named vector with the snp and the gene_name
+draw_manhattan_simple <- function(catalog, choice) {
+
+  snp_sel <- choice$snp
+  gene_sel <- choice$gene_name
+
+  
+}
+
+draw_manhattan_plotly <- function(catalog, choice) {
+  
+}
+
+```
+
+## Example simple d'application Shiny
+
+```{r eruptions, echo = F}
+
+shinyApp(
+  
+  ui <- fluidPage(
+    inputPanel(
+      selectInput("n_breaks", label = "Nombre de barres:",
+              choices = c(10, 20, 35, 50), selected = 20),
+      sliderInput("bw_adjust", label = "Largeur d'ajustement pour la densité:",
+              min = 0.2, max = 2, value = 1, step = 0.2)
+      ),
+    plotOutput("geyserPlot")
+    ),
+  
+  server <- function(input, output) {
+   output$geyserPlot  <- renderPlot({
+      hist(faithful$eruptions, probability = TRUE, breaks = as.numeric(input$n_breaks),
+           xlab = "Durée (minutes)", main = "Durée d'éruption du Geyser")
+      dens <- density(faithful$eruptions, adjust = input$bw_adjust)
+      lines(dens, col = "blue")
+      }) 
+  })
+
+```
+
+## Récupérer les données
+
+- [PheWAS Catalog](https://phewas.mc.vanderbilt.edu/datatable)
+- [PheWAS codes](https://phewas.mc.vanderbilt.edu/phecodes/DB/get_all_jdcodes.html) 
+
+### cloner le repo Github du cours
+- [https://github.com/aneuraz/shiny-intro](https://github.com/aneuraz/shiny-intro)
+
+## Shiny, qu'est-ce que c'est ? 
+- package R développé par RStudio. 
+- web-applications dynamiques
+- HTML, css, javascript FREE
+
+
+## Anatomie d'une app shiny
+
+```{r anatomy, echo = T}
+shinyApp(
+  
+  ui <- basicPage(),
+  
+  server <- function(input, output) {}
+  
+)
+```
+
+## Anatomie d'une app shiny: ui 
+
+- powered by Twitter Bootstrap
+
+```{r ui, echo = T}
+
+shinyApp(
+  
+  ### <b>
+  ui <- basicPage( h2("texte affiché directement par l'ui") ),
+  ### </b>
+  
+  server <- function(input, output) {}
+  
+)
+
+```
+
+## Anatomie d'une app shiny: server
+
+```{r server, echo = T}
+
+shinyApp(
+  
+  ui <- basicPage( h2("texte affiché directement par l'ui"),
+                   h2(textOutput("texte_serveur"))),
+  
+  ### <b>
+  server <- function(input, output) {
+    output$texte_serveur <- renderText("texte affiché via le server")
+  }
+  ### </b>
+)
+
+```
+
+## Layouts: sidebar
+
+```{r ui-layout1, echo = T, eval = F}
+
+shinyApp(
+  
+  ui <- fluidPage( 
+          titlePanel("Ceci est le titre"),
+          
+          sidebarLayout(
+            sidebarPanel(
+              "Sidebar"
+              ),
+          
+            mainPanel(
+              h2(textOutput("texte_serveur")),
+              tags$blockquote("Voici une citation...")
+            )
+          )
+          ),
+  
+  ### <b>
+  server <- function(input, output) {
+    output$texte_serveur <- renderText("texte affiché via le server")
+  }
+  ### </b>
+)
+
+```
+
+
+## Layouts: sidebar-app
+
+```{r ui-layout1-app, echo = F, eval = T}
+
+shinyApp(
+  
+  ui <- fluidPage( 
+          titlePanel("Ceci est le titre"),
+          
+          sidebarLayout(
+            sidebarPanel(
+              "Sidebar"
+              ),
+          
+            mainPanel(
+              h2(textOutput("texte_serveur")),
+               tags$blockquote("Voici une citation...")
+            )
+          )
+          ),
+  
+  ### <b>
+  server <- function(input, output) {
+    output$texte_serveur <- renderText("texte affiché via le server")
+  }
+  ### </b>
+)
+
+```
+
+## Layouts: tabset
+
+```{r ui-layout3, echo = T, eval = F}
+
+shinyApp(
+  
+  ui <- fluidPage( 
+    titlePanel("Ceci est le titre"),
+    tabsetPanel(
+      tabPanel("Plot", textOutput("texte_plot")),
+      tabPanel("Table", textOutput("texte_table"))
+    )
+  ),
+  
+  ### <b>
+  server <- function(input, output) {
+    output$texte_plot <- renderText("ceci est un plot")
+    output$texte_table <- renderText("ceci est un tableau")
+  }
+  ### </b>
+)
+```
+
+## Layouts: tabset-app
+
+```{r ui-layout4, echo = F, eval = T}
+
+shinyApp(
+  
+  ui <- fluidPage( 
+    titlePanel("Ceci est le titre"),
+    tabsetPanel(
+      tabPanel("Plot", textOutput("texte_plot")),
+      tabPanel("Table", textOutput("texte_table"))
+    )
+  ),
+  
+  ### <b>
+  server <- function(input, output) {
+    output$texte_plot <- renderText("ceci est un plot")
+    output$texte_table <- renderText("ceci est un tableau")
+  }
+  ### </b>
+)
+
+```
+
+
+## Layouts: Grid
+
+```{r ui-layout5, echo = T, eval = F}
+
+shinyApp(
+  
+  ui <- fluidPage( 
+    titlePanel("Ceci est le titre"),
+    fluidRow(
+      wellPanel(column(4, h2("col1"))),
+      column(4, h2("col2")),
+      column(4, h2("col3"))
+    ),
+    fluidRow(
+      column(6, h2("col4")),
+      column(6, h2("col5"))
+    )
+  ),
+  server <- function(input, output) {
+  }
+)
+```
+
+## Layouts: grid-app
+
+```{r ui-layout6, echo = F, eval = T}
+
+shinyApp(
+  
+  ui <- fluidPage( 
+    titlePanel("Ceci est le titre"),
+    fluidRow(
+      column(4,  wellPanel(h2("col1"))),
+      column(4, h2("col2")),
+      column(4, wellPanel(h2("col3")))
+    ),
+    fluidRow(
+      column(6, wellPanel(h2("col4"))),
+      column(6, h2("col5"))
+    )
+  ),
+  server <- function(input, output) {
+  }
+)
+
+```
+
+## Inputs
+
+```{r ui-inputs, echo = T, eval = F}
+
+shinyApp(
+  
+  ui <- fluidPage( 
+    
+          sidebarLayout(
+            sidebarPanel(
+              textInput(inputId = "text_input", label = 'texte')
+              ),
+          )
+          ),
+  
+  ### <b>
+  server <- function(input, output) {
+    output$texte_serveur <- renderText("texte affiché via le server")
+  }
+  ### </b>
+)
+
+```
+
+## Inputs-app
+```{r ui-inputs-app, echo = F, eval = T}
+
+shinyApp(
+  
+  ui <- fluidPage( 
+    
+          sidebarLayout(
+            sidebarPanel(
+              textInput(inputId = "text_input", label = 'texte'),
+              sliderInput(inputId = "slider_input", label = 'slider', min = 0, max = 100, value = 40),
+              actionButton(inputId = "button", label="bouton")
+              ),
+            mainPanel(),
+          )
+          ),
+  
+  ### <b>
+  server <- function(input, output) {
+    output$texte_serveur <- renderText("texte affiché via le server")
+  }
+  ### </b>
+)
+
+```
+
+## Basic Inputs (rstudio shiny tutorial) {.smaller}
+
+```{r input-list, echo = F}
+shinyApp(
+  ui <- fluidPage(
+  fluidRow(
+    
+    column(3,
+      h3("Buttons"),
+      actionButton("action", label = "Action"),
+      br(),
+      br(), 
+      submitButton("Submit")),
+    
+    column(3,
+      h3("Single checkbox"),
+      checkboxInput("checkbox", label = "Choice A", value = TRUE)),
+    
+    column(3, 
+      checkboxGroupInput("checkGroup", 
+        label = h3("Checkbox group"), 
+        choices = list("Choice 1" = 1, 
+           "Choice 2" = 2, "Choice 3" = 3),
+        selected = 1)),
+    
+    column(3, 
+      dateInput("date", 
+        label = h3("Date input"), 
+        value = "2014-01-01"))   
+  ),
+  
+  fluidRow(
+    
+    column(3,
+      dateRangeInput("dates", label = h3("Date range"))),
+    
+    column(3,
+      fileInput("file", label = h3("File input"))),
+    
+    column(3, 
+      h3("Help text"),
+      helpText("Note: help text isn't a true widget,", 
+        "but it provides an easy way to add text to",
+        "accompany other widgets.")),
+    
+    column(3, 
+      numericInput("num", 
+        label = h3("Numeric input"), 
+        value = 1))   
+  ),
+    
+  fluidRow(
+    
+    column(3,
+      radioButtons("radio", label = h3("Radio buttons"),
+        choices = list("Choice 1" = 1, "Choice 2" = 2,
+                       "Choice 3" = 3),selected = 1)),
+    
+    column(3,
+      selectInput("select", label = h3("Select box"), 
+        choices = list("Choice 1" = 1, "Choice 2" = 2,
+                       "Choice 3" = 3), selected = 1)),
+    
+    column(3, 
+      sliderInput("slider1", label = h3("Sliders"),
+        min = 0, max = 100, value = 50),
+      sliderInput("slider2", "",
+        min = 0, max = 100, value = c(25, 75))
+      ),
+    
+    column(3, 
+      textInput("text", label = h3("Text input"), 
+        value = "Enter text..."))   
+  )
+
+),
+server <- function(input, output) {}
+
+)
+
+
+```
+
+# Interactions
+
+## simple
+```{r reactivity_1, echo = T, eval = T}
+
+shinyApp(
+  
+  ui <- basicPage(
+    textInput("inp_text", label = "Texte en entrée"),
+    textOutput("out_text")
+    ),
+  
+  server <- function(input, output) {
+    output$out_text <- renderText(toupper(input$inp_text))
+  }
+
+)
+
+```
+
+## simple - output multiple
+```{r reactivity_2, echo = T, eval = T}
+
+shinyApp(
+  
+  ui <- basicPage(
+    textInput("inp_text", label = "Texte en entrée"),
+    textOutput("out_text"),
+    textOutput("out_num")
+    ),
+  
+  server <- function(input, output) {
+    output$out_text <- renderText(toupper(input$inp_text))
+    output$out_num <- renderText(as.numeric(input$inp_text))
+  }
+
+)
+
+```
+
+## reactive() - no side effect
+```{r reactivity_3, echo = T, eval = T}
+
+shinyApp(
+ui <- basicPage(
+    textInput("inp_text", label = "Texte en entrée"),
+    textOutput("out_text")
+    ),
+  
+server <- function(input, output) {
+  ### <b>
+  reactive_text <- reactive({ 
+    input$inp_text %>% toupper() %>% strsplit('') %>% unlist() %>% paste0(collapse = '-')
+    })
+  ### </b>
+  output$out_text <- renderText( reactive_text() )
+  }
+)
+
+```
+
+## observe() - with side effects
+```{r reactivity_4, echo = T, eval = T}
+
+shinyApp(
+ui <- basicPage(
+    textInput("inp_text", label = "Texte en entrée"),
+    textInput("inp_text2", label = "Value:")
+    ),
+  
+server <- function(input, output, session) {
+  observe({
+    if(input$inp_text == 'bleu') {updateTextInput(session, inputId = "inp_text2", value = "OK!!")}
+   })
+  }
+)
+
+```
+
+## Plotly
+```{r manhattan-plotly, echo = T, eval = F}
+
+shinyApp(
+  
+  ui <- fluidPage(
+          fluidRow(
+            column(12,
+                   plotlyOutput("manhattan")
+                   )
+          )
+          ),
+  ### <b>
+  server <- function(input, output) {
+    p <- catalog %>% ggplot(aes(x=cases)) + geom_histogram()
+    output$manhattan <- renderPlotly(ggplotly(p))
+  }
+  ### </b>
+)
+```
+
+
+## Plotly - app
+```{r manhattan-plotly2, echo = F, eval = T}
+
+shinyApp(
+  
+  ui <- fluidPage(
+          fluidRow(
+            column(12,
+                   plotlyOutput("manhattan")
+                   )
+          )
+          ),
+  ### <b>
+  server <- function(input, output) {
+    p <- catalog %>% ggplot(aes(x=cases)) + geom_histogram()
+    output$manhattan <- renderPlotly(ggplotly(p))
+  }
+  ### </b>
+)
+```
+
+
+## table with DT
+```{r DT, echo = T, eval = F}
+
+shinyApp(
+  
+  ui <- fluidPage(
+          fluidRow(
+            column(12,
+                   DT::dataTableOutput("cat_table")
+                   )
+          )
+          ),
+  ### <b>
+  server <- function(input, output) {
+    output$cat_table <- DT::renderDataTable(
+      catalog %>% filter(snp %in% top10$snp) %>% select(snp, phewas.phenotype, p.value, odds.ratio)
+    )
+  }
+  ### </b>
+)
+```
+
+## table with DT - app
+```{r DT2, echo = F, eval = T}
+
+shinyApp(
+  
+  ui <- fluidPage(
+          fluidRow(
+            column(12,
+                   DT::dataTableOutput("cat_table")
+                   )
+          )
+          ),
+  ### <b>
+  server <- function(input, output) {
+    output$cat_table <- DT::renderDataTable(
+      catalog %>% filter(snp %in% top10$snp) %>% select(snp, phewas.phenotype, p.value, odds.ratio)
+    )
+  }
+  ### </b>
+)
+```
+
+
+## References
+
+- [shiny tutorial - rstudio](http://shiny.rstudio.com)
+- [R powered web applications with Shiny - zevross.com](http://zevross.com/blog/2016/04/19/r-powered-web-applications-with-shiny-a-tutorial-and-cheat-sheet-with-40-example-apps/)
+- [widgets html pour shiny](http://www.htmlwidgets.org)
+- [shiny dashboards](https://rstudio.github.io/shinydashboard/get_started.html)
+
