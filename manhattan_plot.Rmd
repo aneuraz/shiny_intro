@@ -1,0 +1,198 @@
+---
+title: "solution"
+author: "Antoine Neuraz"
+date: "21/10/2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(shiny)
+library(dplyr)
+library(ggplot2)
+library(plotly)
+library(DT)
+library(shinydashboard)
+
+knitr::opts_chunk$set(echo = FALSE)
+
+catalog_path <- 'shiny_intro/data/phewas-catalog.csv'
+codes_path <- 'shiny_intro/data/phewas_codes_2016-10-11.csv'
+
+# load data from csv
+catalog <- read.csv(catalog_path, stringsAsFactors = F)
+codes <- read.csv(codes_path, stringsAsFactors = F)
+
+# extract unique phewas codes from codes list
+codes <- codes %>% 
+  select(jd_code, category_string) %>%
+  unique()
+
+# merge codes with their respective category (for plotting)
+catalog <- catalog %>% merge(codes, by.x = 'phewas.code', by.y = 'jd_code')
+
+# extract the list of snps from the catalog
+snps <- catalog %>% 
+  select(snp, gene_name) %>%
+  unique() 
+
+# select top10 genes with significant associations 
+top10 <- catalog %>% 
+  filter(p.value < 0.05/1815) %>% 
+  group_by(snp, gene_name) %>%
+  summarize(count = n()) %>% 
+  arrange(desc(count)) %>%
+  head(10) %>% 
+  select(snp, gene_name)
+
+
+# function to draw a manhattan plot with ggplot2 
+# parameters: catalog = dataframe with the results from the PheWAS catalog
+#             choice = a named vector with the snp and the gene_name
+draw_manhattan_simple <- function(catalog, choice) {
+
+  snp_sel <- choice$snp
+  gene_sel <- choice$gene_name
+
+  p <- catalog %>% 
+  filter(snp == snp_sel) %>%
+  ggplot(aes(y=category_string, 
+             x = -log10(p.value), 
+             color= category_string,
+             text = paste("odds-ratio:",odds.ratio),
+             label= phewas.phenotype)) +
+  geom_vline(xintercept = -log10(0.05/1815), linetype = 3) +
+  geom_jitter(size = 3, alpha = 0.5) +
+  theme_minimal() +
+  ylab('Phenotypes') +
+  xlab('-log(p)') +
+  ggtitle(paste(snp_sel,' - ', gene_sel)) +
+  theme(legend.position="none") 
+  
+  p
+}
+
+draw_manhattan_plotly <- function(catalog, choice) {
+  
+  p <- draw_manhattan_simple(catalog, choice)
+  ggplotly(p, tooltip =c('label','text'))
+  
+}
+
+```
+
+```{r, echo = T}
+
+snp_sel <- top10$snp[1]
+gene_sel <- top10$gene_name[1]
+
+data_to_plot <- catalog %>% 
+  filter(snp == snp_sel)
+
+p <- ggplot(data_to_plot, aes(y=category_string, 
+          x = -log10(p.value), 
+          color= category_string,
+          text = paste("odds-ratio:",odds.ratio),
+          label= phewas.phenotype)) +
+  geom_vline(xintercept = -log10(0.05/1815), linetype = 3) +
+  geom_jitter(size = 3, alpha = 0.5) +
+  theme_minimal() +
+  ylab('Phenotypes') +
+  xlab('-log(p)') +
+  ggtitle(paste(snp_sel,' - ', gene_sel)) +
+  theme(legend.position="none") 
+  
+p
+
+```
+
+```{r, echo = T}
+p <- ggplot(data_to_plot, aes(y=category_string, 
+          x = -log10(p.value))
+)
+  
+p
+```
+
+
+```{r, echo=T}
+p <- ggplot(data_to_plot, aes(y=category_string, 
+          x = -log10(p.value)
+          )) +
+  geom_point() 
+p
+```
+
+```{r, echo=T}
+p <- ggplot(data_to_plot, aes(y=category_string, 
+          x = -log10(p.value), 
+          color= category_string
+          )) +
+  geom_point() 
+  
+p
+```
+
+
+```{r, echo=T}
+p <- ggplot(data_to_plot, aes(y=category_string, 
+          x = -log10(p.value), 
+          color= category_string)) +
+  geom_point() 
+  
+p
+```
+
+
+```{r, echo=T}
+p <- ggplot(data_to_plot, aes(y=category_string, 
+          x = -log10(p.value), 
+          color= category_string
+          )) +
+  geom_jitter(size = 3, alpha = 0.5) 
+  
+p
+```
+
+```{r, echo=T}
+p <- ggplot(data_to_plot, aes(y=category_string, 
+          x = -log10(p.value), 
+          color= category_string)) +
+  geom_vline(xintercept = -log10(0.05/1815), linetype = 3) +
+  geom_jitter(size = 3, alpha = 0.5)
+   
+  
+p
+```
+
+
+```{r, echo=T}
+p <- ggplot(data_to_plot, aes(y=category_string, 
+          x = -log10(p.value), 
+          color= category_string,
+          text = paste("odds-ratio:",odds.ratio),
+          label= phewas.phenotype)) +
+  geom_vline(xintercept = -log10(0.05/1815), linetype = 3) +
+  geom_jitter(size = 3, alpha = 0.5) +
+  ylab('Phenotypes') +
+  xlab('-log(p)') +
+  ggtitle(paste(snp_sel,' - ', gene_sel)) 
+  
+p
+```
+
+```{r, echo=T}
+p <- ggplot(data_to_plot, aes(y=category_string, 
+          x = -log10(p.value), 
+          color= category_string,
+          text = paste("odds-ratio:",odds.ratio),
+          label= phewas.phenotype)) +
+  geom_vline(xintercept = -log10(0.05/1815), linetype = 3) +
+  geom_jitter(size = 3, alpha = 0.5) +
+  theme_minimal() +
+  ylab('Phenotypes') +
+  xlab('-log(p)') +
+  ggtitle(paste(snp_sel,' - ', gene_sel)) +
+  theme(legend.position="none") 
+  
+p
+```
