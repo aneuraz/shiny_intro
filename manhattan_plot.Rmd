@@ -15,8 +15,8 @@ library(shinydashboard)
 
 knitr::opts_chunk$set(echo = FALSE)
 
-catalog_path <- 'shiny_intro/data/phewas-catalog.csv'
-codes_path <- 'shiny_intro/data/phewas_codes_2016-10-11.csv'
+catalog_path <- 'data/phewas-catalog.csv'
+codes_path <- 'data/phewas_codes_2016-10-11.csv'
 
 # load data from csv
 catalog <- read.csv(catalog_path, stringsAsFactors = F)
