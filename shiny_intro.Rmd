@@ -1,7 +1,7 @@
 ---
 title: "Introduction à Shiny"
 author: "Antoine Neuraz - antoine.neuraz@gmail.com"
-date: "18/10/2016"
+date: "16/11/2022"
 output:
   ioslides_presentation:
     highlight: pygments
@@ -17,6 +17,7 @@ library(ggplot2)
 library(plotly)
 library(DT)
 library(shinydashboard)
+library(shinythemes)
 
 knitr::opts_chunk$set(echo = FALSE)
 
@@ -74,6 +75,7 @@ draw_manhattan_plotly <- function(catalog, choice) {
 shinyApp(
   
   ui <- fluidPage(
+    theme=shinytheme("lumen"),
     inputPanel(
       selectInput("n_breaks", label = "Nombre de barres:",
               choices = c(10, 20, 35, 50), selected = 20),

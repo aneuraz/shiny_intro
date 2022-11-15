@@ -1,7 +1,7 @@
 ---
 title: "Introduction à Shiny"
-author: "Antoine Neuraz - antoine.neuraz@gmail.com"
-date: "18/10/2016"
+author: "Antoine Neuraz - antoine.neuraz@aphp.fr"
+date: "16/11/2022"
 output:
   html_document:
     highlight: pygments

@@ -1,7 +1,7 @@
 ---
 title: "manhattan plot"
 author: "Antoine Neuraz"
-date: "21/10/2016"
+date: "16/11/2022"
 output: html_document
 ---
 
@@ -49,8 +49,7 @@ top10 <- catalog %>%
 # parameters: catalog = dataframe with the results from the PheWAS catalog
 #             choice = a named vector with the snp and the gene_name
 draw_manhattan_simple <- function(catalog, choice) {
-
-  
+ 
 }
 
 draw_manhattan_plotly <- function(catalog, choice) {
